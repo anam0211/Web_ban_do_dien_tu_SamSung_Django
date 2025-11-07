@@ -60,10 +60,10 @@ def _is_admin(user) -> bool:
 
 def _orders_by_user_or_email(user, email=None):
     if _is_logged_in(user):
-        return Order.objects.filter(Q(user_id=user.id) | Q(email=user.email)).order_by("-id")
+        return Order.objects.filter(Q(user_id=user.id) | Q(email=user.email)).order_by("-id") #sql
 
     if email:
-        return Order.objects.filter(email=email).order_by("-id")
+        return Order.objects.filter(email=email).order_by("-id") #sql
 
     return Order.objects.none()
 
@@ -78,7 +78,7 @@ def _extract_order_id(text: str):
 def _answer_order(message, user=None):
     msg = message.lower()
 
-    # ===================== 1️⃣ TRA ĐƠN HÀNG CỦA TÔI =====================
+    # =====================TRA ĐƠN HÀNG CỦA TÔI =====================
     if "đơn hàng của tôi" in msg or "don hang cua toi" in msg:
         if not _is_logged_in(user):
             return "🔐 Bạn cần đăng nhập để xem đơn hàng của mình."
@@ -93,11 +93,11 @@ def _answer_order(message, user=None):
             text += f"- #{o.id} | {o.shipping_status} | ₫{total}\n"
         return text
 
-    # ===================== 2️⃣ TRA THEO EMAIL =====================
+    # ===================== TRA THEO EMAIL =====================
     email_match = re.search(r"[\w\.-]+@[\w\.-]+", msg)
     if email_match:
         email = email_match.group(0).strip()
-        orders = Order.objects.filter(email=email).order_by("-id")
+        orders = Order.objects.filter(email=email).order_by("-id")  #sql
 
         if not orders:
             return f" Không tìm thấy đơn hàng nào cho email **{email}**."
@@ -108,7 +108,7 @@ def _answer_order(message, user=None):
             text += f"- #{o.id} | {o.shipping_status} | ₫{total}\n"
         return text
 
-    # ===================== 3️⃣ TRA THEO MÃ ĐƠN (fallback) =====================
+    # =====================TRA THEO MÃ ĐƠN (fallback) =====================
     order_id = _extract_order_id(msg)
     if not order_id:
         return "🔎 Vui lòng nhập email hoặc gõ **Tra đơn hàng của tôi** để xem đơn hàng."
@@ -124,7 +124,7 @@ def _answer_order(message, user=None):
     if not (_is_admin(user) or (o.user_id == user.id) or (o.email == user.email)):
         return " Vui lòng nhập đúng mã vận đơn hoặc soạn theo cú pháp *tra đơn hàng của tôi*."
 
-    items = OrderItem.objects.filter(order=o)
+    items = OrderItem.objects.filter(order=o) #sql
     s = ", ".join([f"{it.product.title} x{it.quantity}" for it in items]) or "(trống)"
     total = getattr(o, "amount_paid", getattr(o, "total", 0))
     date = o.date_ordered.strftime('%d/%m/%Y %H:%M') if o.date_ordered else "(N/A)"
@@ -158,7 +158,7 @@ def _load_index():
 def _answer_product(message, k=5):
     index, meta, model = _load_index()
     if not index or not model:
-        qs = Product.objects.filter(Q(title__icontains=message) | Q(description__icontains=message))[:k]
+        qs = Product.objects.filter(Q(title__icontains=message) | Q(description__icontains=message))[:k] #sql
         if not qs:
             return "Không tìm thấy sản phẩm phù hợp."
         return "Gợi ý:\n" + "\n".join([f"- {p.title} (₫{p.price})" for p in qs])
@@ -167,7 +167,7 @@ def _answer_product(message, k=5):
     qv = (qv / (np.linalg.norm(qv) + 1e-10)).astype("float32")[None, :]
     D, I = index.search(qv, k)
     ids = [meta[i]["id"] for i in I[0] if i >= 0]
-    products = list(Product.objects.filter(id__in=ids))
+    products = list(Product.objects.filter(id__in=ids)) #sql
 
     if not products:
         return "Không tìm thấy sản phẩm phù hợp."
@@ -185,7 +185,6 @@ def process_message(msg: str, user=None):
         return fixed
 
     # Order-related intent
-    if re.search(r"(tra|check|kiem|kiểm|đơn|don|order|mã|ma)\s*(đơn|don)?", msg.lower()):
+    if re.search(r"(tra|check|kiem|kiểm|chi\s*tiet|chitiet|đơn|don|order|mã|ma)\s*(đơn|don)?", msg.lower()):
         return _answer_order(msg, user)
-
     return _answer_product(msg)

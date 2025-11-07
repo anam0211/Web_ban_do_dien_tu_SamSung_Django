@@ -116,7 +116,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'shopdb',      # tên database MySQL bạn vừa tạo
         'USER': 'root',              # username MySQL
-        'PASSWORD': '123',       # password MySQL
+        'PASSWORD': '0211205',       # password MySQL
         'HOST': 'localhost',         # hoặc IP của server
         'PORT': '3306',              # cổng mặc định
         'OPTIONS': {

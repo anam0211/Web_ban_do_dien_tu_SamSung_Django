@@ -9,6 +9,7 @@ from django.db import connection
 from payment.models import DailyRevenue
 
 from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib.admin import site as admin_site
 
 def store(request):
 
